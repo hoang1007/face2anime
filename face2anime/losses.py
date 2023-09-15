@@ -5,7 +5,7 @@ from torch import nn
 
 def gan_loss(
     input: torch.Tensor,
-    target: Union[int, torch.Tensor],
+    target: Union[int, bool, torch.Tensor],
     lsgan: bool = True,
     size_average: bool = False,
     reduction: str = "mean",
