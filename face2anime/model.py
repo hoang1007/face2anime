@@ -18,7 +18,8 @@ class CycleGANTrainingConfig:
         identity_loss_weight: float = 0.5,
         learning_rate: float = 1e-4,
         weight_decay: float = 1e-4,
-        use_lsgan: bool = True
+        use_lsgan: bool = True,
+        warmup_generator_steps: int = 200
     ):
         self.lambda_ab = lambda_ab
         self.lambda_ba = lambda_ba
@@ -26,6 +27,7 @@ class CycleGANTrainingConfig:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.use_lsgan = use_lsgan
+        self.warmup_generator_steps = warmup_generator_steps
 
 
 class CycleGAN(LightningModule):
@@ -97,10 +99,10 @@ class CycleGAN(LightningModule):
         lsgan = self.training_config.use_lsgan
 
         discriminator_loss_a = 0.5 * (
-            gan_loss(fake_a.detach(), fake_target, lsgan) + gan_loss(real_a, real_target, lsgan)
+            gan_loss(self.discriminator_a(fake_a), fake_target, lsgan) + gan_loss(self.discriminator_a(real_a), real_target, lsgan)
         )
         discriminator_loss_b = 0.5 * (
-            gan_loss(fake_b.detach(), fake_target, lsgan) + gan_loss(real_b, real_target, lsgan)
+            gan_loss(self.discriminator_b(fake_b), fake_target, lsgan) + gan_loss(self.discriminator_b(real_b), real_target, lsgan)
         )
 
         losses_a = {
@@ -115,14 +117,15 @@ class CycleGAN(LightningModule):
     def training_step(self, batch, batch_idx: int):
         real_a, real_b = batch
 
-        fake_b = self(real_a)
-        fake_a = self(real_b, b2a=True)
-
         opt_g, opt_d = self.optimizers()
+        loss_dict = dict()
+        prefix = 'train/'
 
         # Train generators
         self.toggle_optimizer(opt_g)
         opt_g.zero_grad()
+        fake_b = self(real_a)
+        fake_a = self(real_b, b2a=True)
         g_losses_a, g_losses_b = self.compute_generator_losses(
             real_a, fake_a, real_b, fake_b
         )
@@ -131,31 +134,31 @@ class CycleGAN(LightningModule):
         opt_g.step()
         self.untoggle_optimizer(opt_g)
 
-        # Train discriminators
-        self.toggle_optimizer(opt_d)
-        opt_d.zero_grad()
-        d_losses_a, d_losses_b = self.compute_discriminator_losses(
-            real_a, fake_a, real_b, fake_b
-        )
-        d_loss = sum(d_losses_a.values()) + sum(d_losses_b.values())
-        self.manual_backward(d_loss)
-        opt_d.step()
-        self.untoggle_optimizer(opt_d)
-
-        loss_dict = dict()
-        prefix = 'train/'
         for n, loss in g_losses_a.items():
             loss_dict[prefix + n + '_a'] = loss.item()
         for n, loss in g_losses_b.items():
             loss_dict[prefix + n + '_b'] = loss.item()
-        for n, loss in d_losses_a.items():
-            loss_dict[prefix + n + '_a'] = loss.item()
-        for n, loss in d_losses_b.items():
-            loss_dict[prefix + n + '_b'] = loss.item()
-        loss_dict.update({
-            prefix + 'g_loss': g_loss.item(),
-            prefix + 'd_loss': d_loss.item(),
-        })
+        loss_dict[prefix + 'g_loss'] = g_loss.item()
+
+        if self.global_step > self.training_config.warmup_generator_steps:
+            # Train discriminators
+            self.toggle_optimizer(opt_d)
+            opt_d.zero_grad()
+            fake_b = self(real_a)
+            fake_a = self(real_b, b2a=True)
+            d_losses_a, d_losses_b = self.compute_discriminator_losses(
+                real_a, fake_a, real_b, fake_b
+            )
+            d_loss = sum(d_losses_a.values()) + sum(d_losses_b.values())
+            self.manual_backward(d_loss)
+            opt_d.step()
+            self.untoggle_optimizer(opt_d)
+
+            for n, loss in d_losses_a.items():
+                loss_dict[prefix + n + '_a'] = loss.item()
+            for n, loss in d_losses_b.items():
+                loss_dict[prefix + n + '_b'] = loss.item()
+            loss_dict[prefix + 'd_loss'] = d_loss.item()
 
         self.log_dict(loss_dict, prog_bar=False, on_step=True, on_epoch=True)
     
@@ -224,7 +227,7 @@ class CycleGAN(LightningModule):
 
     @torch.inference_mode()
     def log_images(self, im_dict: Dict[str, torch.Tensor]):
-        im_grid_dict = make_image_grid(im_dict)
+        # im_grid_dict = make_image_grid(im_dict)
 
-        for title, im_grid in im_grid_dict.items():
-            self.logger.experiment.add_image(title, im_grid)
+        for title, im_grid in im_dict.items():
+            self.logger.log_image(title, list(im_grid))
