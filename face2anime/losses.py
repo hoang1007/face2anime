@@ -7,17 +7,16 @@ def gan_loss(
     input: torch.Tensor,
     target: Union[int, bool, torch.Tensor],
     lsgan: bool = True,
-    size_average: bool = False,
     reduction: str = "mean",
 ):
     if not isinstance(target, torch.Tensor):
-        target = torch.tensor(target).expand_as(input)
+        target = torch.tensor(target).type_as(input).expand_as(input)
 
     if lsgan:
         return nn.functional.mse_loss(
-            input, target, size_average=size_average, reduction=reduction
+            input, target, reduction=reduction
         )
     else:
         return nn.functional.binary_cross_entropy(
-            input, target, size_average=size_average, reduction=reduction
+            input, target, reduction=reduction
         )
