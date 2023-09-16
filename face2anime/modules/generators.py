@@ -33,6 +33,7 @@ class ResnetGenerator(nn.Module):
                     nn.ReLU(inplace=True),
                 )
             )
+            prev_channels = channels
 
         self.res_blocks = nn.ModuleList()
         for _ in range(num_res_layers):
@@ -43,8 +44,8 @@ class ResnetGenerator(nn.Module):
             self.upsample.append(
                 nn.Sequential(
                     nn.ConvTranspose2d(
-                        channels,
                         prev_channels,
+                        channels,
                         kernel_size=3,
                         stride=2,
                         padding=1,
@@ -78,6 +79,8 @@ class ResnetGenerator(nn.Module):
 
 class ResBlock(nn.Module):
     def __init__(self, in_channels: int, dropout: float = 0.0, bias: bool = True):
+        super().__init__()
+
         self.blocks = nn.Sequential(
             nn.ReflectionPad2d(1),
             nn.Conv2d(in_channels, in_channels, kernel_size=3, bias=bias),
