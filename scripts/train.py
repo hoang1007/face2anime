@@ -1,8 +1,8 @@
 from argparse import ArgumentParser
 
 from face2anime.model import CycleGAN, CycleGANTrainingConfig
-from face2anime.modules.generators import ResnetGenerator
-from face2anime.modules.discriminators import NLayerDiscriminator
+from face2anime.modules.generators import init_generator
+from face2anime.modules.discriminators import init_discriminator
 from face2anime.dataset import CycleGANDataset
 
 from lightning.pytorch import Trainer
@@ -23,11 +23,20 @@ if __name__ == '__main__':
         warmup_generator_steps=1000
     )
 
+    Generator = init_generator(
+        'base',
+        img_channels=3,
+        n_layer_blocks=2,
+    )
+    Discriminator = init_discriminator(
+        'nlayer',
+        ndf=64
+    )
     model = CycleGAN(
-        generator_ab=ResnetGenerator(3, 3, [128, 256], dropout=0.1),
-        discriminator_a=NLayerDiscriminator(ndf=128),
-        generator_ba=ResnetGenerator(3, 3, [128, 256], dropout=0.1),
-        discriminator_b=NLayerDiscriminator(ndf=128),
+        generator_ab=Generator(),
+        discriminator_a=Discriminator(),
+        generator_ba=Generator(),
+        discriminator_b=Discriminator(),
         training_config=training_cfg
     )
 

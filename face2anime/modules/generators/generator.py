@@ -1,14 +1,12 @@
 from typing import List
 import torch
-import pyrootutils
 from torch import nn
 from torch import Tensor
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+from face2anime.modules.up_down import Encoder, Decoder
 
-from src.models.components.up_down import Encoder, Decoder
 
-class Generator(nn.Module):
+class BaseGenerator(nn.Module):
     def __init__(self,
                  img_channels: int,
                  channels: int = 32,
@@ -17,7 +15,7 @@ class Generator(nn.Module):
                  channel_multipliers: List[int] = [1, 2, 4],
                  attention: str = "Attention"):
         
-        super(Generator, self).__init__()
+        super().__init__()
         
         self.encoder = Encoder(in_channels=img_channels,
                                channels=channels,
@@ -41,7 +39,7 @@ class Generator(nn.Module):
 
 if __name__ == "__main__":
     x = torch.randn(2, 3, 32, 32)
-    generator = Generator(img_channels=3)
+    generator = BaseGenerator(img_channels=3)
     out = generator(x)
 
     print('***** Generator *****')

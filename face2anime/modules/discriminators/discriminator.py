@@ -1,17 +1,15 @@
 from typing import List
 
 import torch
-import pyrootutils
 from torch import nn
 from torch import Tensor
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+from face2anime.modules.blocks import init_block
+from face2anime.modules.up_down import DownSample
 
 
-from src.models.components.blocks import init_block
-from src.models.components.up_down import DownSample
-
-class Discriminator(nn.Module):
+class BaseDiscriminator(nn.Module):
     def __init__(self,
                  img_channels: int,
                  channels: int = 32,
@@ -19,7 +17,7 @@ class Discriminator(nn.Module):
                  n_layer_blocks: int = 1,
                  channel_multipliers: List[int] = [1, 2, 4]):
         
-        super(Discriminator, self).__init__()
+        super(BaseDiscriminator, self).__init__()
 
         # Number of levels downSample
         levels = len(channel_multipliers)
@@ -80,7 +78,7 @@ class Discriminator(nn.Module):
 
 if __name__ == "__main__":
     x = torch.randn(2, 3, 32, 32)
-    discriminator = Discriminator(img_channels=3)
+    discriminator = BaseDiscriminator(img_channels=3)
     out = discriminator(x)
 
     print('***** Discriminator *****')

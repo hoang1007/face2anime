@@ -1,15 +1,13 @@
 from typing import List
 
 import torch
-import pyrootutils
 from torch import nn
 from torch import Tensor
 
-pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+from face2anime.modules.blocks import init_block
+from face2anime.modules.attentions import init_attention
+from face2anime.modules.up_down import DownSample
 
-from src.models.components.blocks import init_block
-from src.models.components.attentions import init_attention
-from src.models.components.up_down import DownSample
 
 class Encoder(nn.Module):
     """
