@@ -1,51 +1,49 @@
+from typing import List
+import torch
+import pyrootutils
 from torch import nn
-from pytorch_lightning import LightningModule
+from torch import Tensor
+
+pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+from src.models.components.up_down import Encoder, Decoder
 
 class Generator(nn.Module):
-    def __init__(self, z_dim=10, im_chan=1, hidden_dim=64):
+    def __init__(self,
+                 img_channels: int,
+                 channels: int = 32,
+                 block: str = "Residual",
+                 n_layer_blocks: int = 1,
+                 channel_multipliers: List[int] = [1, 2, 4],
+                 attention: str = "Attention"):
+        
         super(Generator, self).__init__()
-        self.z_dim = z_dim
-        # Build the neural network
-        self.gen_layer0 = self.make_gen_block(z_dim, hidden_dim * 4)
-        self.gen_layer1 = self.make_gen_block(hidden_dim * 4, hidden_dim * 2, kernel_size=4, stride=1)
-        self.gen_layer2 = self.make_gen_block(hidden_dim * 2, hidden_dim)
-        self.gen_layer3 = self.make_gen_block(hidden_dim, im_chan, kernel_size=4, final_layer=True)
+        
+        self.encoder = Encoder(in_channels=img_channels,
+                               channels=channels,
+                               block=block,
+                               n_layer_blocks=n_layer_blocks,
+                               channel_multipliers=channel_multipliers,
+                               attention=attention)
+        
+        self.decoder = Decoder(out_channels=img_channels,
+                               channels=channels,
+                               block=block,
+                               n_layer_blocks=n_layer_blocks,
+                               channel_multipliers=channel_multipliers,
+                               attention=attention)
 
-    def make_gen_block(self, input_channels, output_channels, kernel_size=3, stride=2, final_layer=False):
-        # Build the neural block
-        if not final_layer:
-            return nn.Sequential(
-                nn.ConvTranspose2d(input_channels, output_channels, kernel_size, stride),
-                nn.BatchNorm2d(output_channels),
-                nn.ReLU(inplace=True)
-            )
-        else: # Final Layer
-            return nn.Sequential(
-                nn.ConvTranspose2d(input_channels, output_channels, kernel_size, stride),
-                nn.Tanh()                
-            )
-
-    def unsqueeze_noise(self, noise):
-        return noise.view(len(noise), self.z_dim, 1, 1)
-
-    def forward(self, noise):
-        x = self.unsqueeze_noise(noise)
-        out = self.gen_layer0(x)
-        out = self.gen_layer1(out)
-        out = self.gen_layer2(out)
-        out = self.gen_layer3(out)
-        return out
+    def forward(self, x: Tensor):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+    
 
 if __name__ == "__main__":
-    z_dim = 64
-    gen = Generator(z_dim=z_dim)
-    noise = torch.randn(128, z_dim, 1, 1)
-    print(noise.shape)
-    tmp = gen.gen_layer0(noise)
-    print(tmp.shape)
-    tmp = gen.gen_layer1(tmp)
-    print(tmp.shape)
-    tmp = gen.gen_layer2(tmp)
-    print(tmp.shape)
-    tmp = gen.gen_layer3(tmp)
-    print(tmp.shape)
+    x = torch.randn(2, 3, 32, 32)
+    generator = Generator(img_channels=3)
+    out = generator(x)
+
+    print('***** Generator *****')
+    print('Input:', x.shape)
+    print('Output:', out.shape)

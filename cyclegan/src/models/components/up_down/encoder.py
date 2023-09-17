@@ -19,21 +19,17 @@ class Encoder(nn.Module):
     def __init__(self,
                  in_channels: int,
                  channels: int = 32,
-                 z_channels: int = 32,
                  block: str = "Residual",
                  n_layer_blocks: int = 1,
                  channel_multipliers: List[int] = [1, 2, 4],
-                 attention: str = "Attention",
-                 double_z: bool = False) -> None:
+                 attention: str = "Attention") -> None:
         """
         in_channels: is the number of channels in the image
         channels: is the number of channels in the first convolution layer
-        z_channels: is the number of channels in the embedding space
         block: is the block of block in each layers of encoder
         n_layer_blocks: is the number of resnet layers at each resolution
         channel_multipliers: are the multiplicative factors for the number of channels in the subsequent blocks
         attention:
-        double_z:
         """
         super().__init__()
 
@@ -49,9 +45,6 @@ class Encoder(nn.Module):
         # attention layer
         Attention = init_attention(attention)
 
-        # Number of channels in the  top-level block
-        channels = channels_list[-1]
-
         # Input convolution
         self.encoder_input = nn.Conv2d(in_channels=in_channels,
                                  out_channels=channels,
@@ -63,7 +56,7 @@ class Encoder(nn.Module):
 
         # Prepare layer for downSampling
         for i in range(levels):
-            # Add the blocks, attentions and downSample
+            # Add the blocks and downSample
             blocks = nn.ModuleList()
 
             for _ in range(n_layer_blocks):
@@ -87,22 +80,11 @@ class Encoder(nn.Module):
             #
             self.encoder.append(down)
 
-            # mid block with attention
-            self.mid = nn.Sequential(
-                Block(in_channels=channels),
-                Attention(channels=channels),
-                Block(in_channels=channels),
-            )
-
-        # output encoder
-        self.encoder_output = nn.Sequential(
-            nn.GroupNorm(num_groups=32, num_channels=channels),
-            nn.SiLU(inplace=True),
-            nn.Conv2d(in_channels=channels,
-                        out_channels=2*z_channels if double_z else z_channels,
-                        kernel_size=3,
-                        stride=1,
-                        padding=1),
+        # mid block with attention
+        self.mid = nn.Sequential(
+            Block(in_channels=channels),
+            Attention(channels=channels),
+            Block(in_channels=channels),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -124,10 +106,6 @@ class Encoder(nn.Module):
         # mid block with attention
         x = self.mid(x)
 
-        # Map image space to mean-var in z space
-        x = self.encoder_output(x)
-
-        #
         return x
 
 if __name__ == "__main__":

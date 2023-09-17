@@ -19,7 +19,6 @@ class Decoder(nn.Module):
     def __init__(self,
                  out_channels: int,
                  channels: int = 32,
-                 z_channels: int = 32,
                  block: str = "Residual",
                  n_layer_blocks: int = 1,
                  channel_multipliers: List[int] = [1, 2, 4],
@@ -27,7 +26,6 @@ class Decoder(nn.Module):
         """
         out_channels: is the number of channels in the image
         channels: is the number of channels in the final convolution layer
-        z_channels: is the number of channels in the embedding space
         block: is the block in each layers of decoder
         n_layer_blocks: is the number of resnet layers at each resolution
         channel_multipliers: are the multiplicative factors for the number of channels in the subsequent blocks
@@ -49,13 +47,6 @@ class Decoder(nn.Module):
 
         # Number of channels in the  top-level block
         channels = channels_list[-1]
-
-        # map z space to image space
-        self.decoder_input = nn.Conv2d(in_channels=z_channels,
-                                 out_channels=channels,
-                                 kernel_size=3,
-                                 stride=1,
-                                 padding=1)
 
         # mid block with attention
         self.mid = nn.Sequential(
@@ -103,14 +94,11 @@ class Decoder(nn.Module):
                       padding=1),
         )
 
-    def forward(self, z: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         """
         :param z: is the embedding tensor with shape `[batch_size, z_channels, z_height, z_height]`
         """
 
-        # Map z space to image space
-        x = self.decoder_input(z)
-        
         # mid block with attention
         x = self.mid(x)
 
@@ -129,7 +117,7 @@ class Decoder(nn.Module):
         return x
     
 if __name__ == "__main__":
-    x = torch.randn(2, 32, 8, 8)
+    x = torch.randn(2, 128, 8, 8)
     decoder = Decoder(out_channels=3)
     out = decoder(x)
 
