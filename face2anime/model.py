@@ -7,7 +7,6 @@ from torch import nn
 import torch.nn.functional as F
 
 from .losses import gan_loss
-from .utils import make_image_grid
 
 
 class CycleGANTrainingConfig:

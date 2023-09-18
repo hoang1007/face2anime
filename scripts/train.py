@@ -77,7 +77,7 @@ def main(config: DictConfig):
         num_workers=4
     )
 
-    logger = WandbLogger(project='face2anime', log_model=True, config=log_config)
+    logger = WandbLogger(project='face2anime', log_model=True)
     logger.log_hyperparams(log_config)
 
     trainer = Trainer(
