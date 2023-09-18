@@ -159,3 +159,14 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 */data
+
+
+# Data directory
+data/
+
+# Checkpoints
+*.ckpt
+
+# Logs
+wandb/
+logs/

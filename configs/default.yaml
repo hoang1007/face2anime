@@ -1,0 +1,26 @@
+generator:
+  _target_: face2anime.modules.generators.ResnetGenerator
+  in_channels: 3
+  out_channels: 3
+  hidden_channels: [64, 128]
+  dropout: 0.2
+
+discriminator:
+  _target_: face2anime.modules.discriminators.NLayerDiscriminator
+  n_layers: 3
+
+training:
+  seed: 42
+  batch_size: 32
+  epochs: 200
+  learning_rate: 5e-5
+  weight_decay: 0.0000001
+  warmup_generator_steps: 0
+  precision: 16-mixed
+  check_val_every_n_epoch: 10
+
+data:
+  root: data
+  prefix_a: face_photo
+  prefix_b: face_cartoon/kyoto_face
+  image_size: 64
