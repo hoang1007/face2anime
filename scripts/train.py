@@ -26,6 +26,7 @@ def load_config(path):
 
 def main(config: DictConfig):
     log_config = config.copy()
+
     seed = config.get('training').pop('seed')
     seed_everything(seed)
 
@@ -76,11 +77,14 @@ def main(config: DictConfig):
         num_workers=4
     )
 
+    logger = WandbLogger(project='face2anime', log_model=True, config=log_config)
+    logger.log_hyperparams(log_config)
+
     trainer = Trainer(
         callbacks=[
             ModelCheckpoint('checkpoints'),
         ],
-        logger=WandbLogger(project='face2anime', log_model=True, config=log_config),
+        logger=logger,
         max_epochs=epochs,
         **config.training
     )
