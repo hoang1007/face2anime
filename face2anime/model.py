@@ -8,6 +8,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from torchmetrics.image import FrechetInceptionDistance
+from face2anime.utils import ImagePool
 
 from .losses import gan_loss
 
@@ -21,7 +22,8 @@ class CycleGANTrainingConfig:
         learning_rate: float = 1e-4,
         weight_decay: float = 1e-4,
         use_lsgan: bool = True,
-        warmup_generator_steps: int = 200
+        pool_size: int = 0,
+        warmup_generator_steps: int = 0
     ):
         self.lambda_ab = lambda_ab
         self.lambda_ba = lambda_ba
@@ -29,6 +31,7 @@ class CycleGANTrainingConfig:
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.use_lsgan = use_lsgan
+        self.pool_size = pool_size
         self.warmup_generator_steps = warmup_generator_steps
         self.feature = 64
         self.n_image_fid = 100
@@ -48,6 +51,9 @@ class CycleGAN(LightningModule):
 
         self.automatic_optimization = False
         self.training_config = training_config
+
+        self.fake_a_pool = ImagePool(training_config.pool_size)
+        self.fake_b_pool = ImagePool(training_config.pool_size)
 
         self.generator_ab = generator_ab
         self.discriminator_b = discriminator_b
@@ -119,6 +125,9 @@ class CycleGAN(LightningModule):
 
         fake_target, real_target = 0, 1
         lsgan = self.training_config.use_lsgan
+
+        fake_a = self.fake_a_pool.query(fake_a)
+        fake_b = self.fake_b_pool.query(fake_b)
 
         discriminator_loss_a = 0.5 * (
             gan_loss(self.discriminator_a(fake_a), fake_target, lsgan) + gan_loss(self.discriminator_a(real_a), real_target, lsgan)
