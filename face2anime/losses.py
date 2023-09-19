@@ -17,6 +17,6 @@ def gan_loss(
             input, target, reduction=reduction
         )
     else:
-        return nn.functional.binary_cross_entropy(
+        return nn.functional.binary_cross_entropy_with_logits(
             input, target, reduction=reduction
         )
