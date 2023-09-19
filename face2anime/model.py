@@ -254,13 +254,13 @@ class CycleGAN(LightningModule):
         for title, im_grid in im_dict.items():
             self.logger.log_image(title, list(im_grid))
 
-    def on_train_batch_end(self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int) -> None:
+    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int) -> None:
         self.store_data(batch, mode='train')
 
-    def on_validation_batch_end(self, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+    def on_validation_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
         self.store_data(batch, mode='val')
 
-    def on_test_batch_end(self, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+    def on_test_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
         self.store_data(batch, mode='test')
 
     def store_data(self, 
@@ -285,9 +285,9 @@ class CycleGAN(LightningModule):
 
         self.fid_photo.reset()
         self.fid_anime.reset()
-    
-        real_photo = self.photo_images[:self.n_image_fid]
-        real_anime = self.anime_images[:self.n_image_fid]
+        
+        real_photo = self.photo_images[mode][:self.n_image_fid]
+        real_anime = self.anime_images[mode][:self.n_image_fid]
 
         fake_photo = self(real_anime, b2a=True) * 0.5 + 0.5
         fake_anime = self(real_photo) * 0.5 + 0.5
@@ -298,8 +298,8 @@ class CycleGAN(LightningModule):
         self.fid_anime.update(fake_anime, real=False)
         self.fid_anime.update(real_anime, real=True)
 
-        self.log(mode + '/fid_photo', self.fid_photo.compute(), prog_bar=False, on_step=True, on_epoch=True)
-        self.log(mode + '/fid_anime', self.fid_anime.compute(), prog_bar=False, on_step=True, on_epoch=True)
+        self.log(mode + '/fid_photo', self.fid_photo.compute(), prog_bar=False, on_step=False, on_epoch=True)
+        self.log(mode + '/fid_anime', self.fid_anime.compute(), prog_bar=False, on_step=False, on_epoch=True)
 
         self.photo_images[mode] = None
         self.anime_images[mode] = None
