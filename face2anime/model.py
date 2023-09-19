@@ -1,10 +1,13 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import itertools
 
 from lightning.pytorch import LightningModule
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 import torch
 from torch import nn
 import torch.nn.functional as F
+
+from torchmetrics.image import FrechetInceptionDistance
 
 from .losses import gan_loss
 
@@ -27,6 +30,8 @@ class CycleGANTrainingConfig:
         self.weight_decay = weight_decay
         self.use_lsgan = use_lsgan
         self.warmup_generator_steps = warmup_generator_steps
+        self.feature = 64
+        self.n_image_fid = 100
 
 
 class CycleGAN(LightningModule):
@@ -49,6 +54,24 @@ class CycleGAN(LightningModule):
 
         self.generator_ba = generator_ba
         self.discriminator_a = discriminator_a
+
+        self.fid_photo = FrechetInceptionDistance(feature=training_config.feature, 
+                                                                    normalize=True)
+        
+        self.fid_anime = FrechetInceptionDistance(feature=training_config.feature, 
+                                                                    normalize=True)
+        
+        self.n_image_fid = training_config.n_image_fid
+        self.photo_images = {
+            'train': None,
+            'val': None,
+            'test': None,
+        }
+        self.anime_images = {
+            'train': None,
+            'val': None,
+            'test': None,
+        }
 
     def forward(self, input: torch.FloatTensor, b2a: bool = False):
         if b2a:
@@ -230,3 +253,54 @@ class CycleGAN(LightningModule):
 
         for title, im_grid in im_dict.items():
             self.logger.log_image(title, list(im_grid))
+
+    def on_train_batch_end(self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int) -> None:
+        self.store_data(batch, mode='train')
+
+    def on_validation_batch_end(self, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+        self.store_data(batch, mode='val')
+
+    def on_test_batch_end(self, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+        self.store_data(batch, mode='test')
+
+    def store_data(self, 
+                   batch: Any, 
+                   mode: str):
+        if self.photo_images[mode] == None:
+            self.photo_images[mode], self.anime_images[mode] = batch
+        elif self.photo_images[mode].shape[0] < self.n_image_fid:
+            self.photo_images[mode] = torch.cat((self.photo_images[mode], batch[0]), dim=0)
+            self.anime_images[mode] = torch.cat((self.anime_images[mode], batch[1]), dim=0)
+
+    def on_train_epoch_end(self) -> None:
+        self.compute_fid(mode='train')
+    
+    def on_validation_epoch_end(self) -> None:
+        self.compute_fid(mode='val')
+
+    def on_test_epoch_end(self) -> None:
+        self.compute_fid(mode='test')
+
+    def compute_fid(self, mode: str):
+
+        self.fid_photo.reset()
+        self.fid_anime.reset()
+    
+        real_photo = self.photo_images[:self.n_image_fid]
+        real_anime = self.anime_images[:self.n_image_fid]
+
+        fake_photo = self(real_anime, b2a=True) * 0.5 + 0.5
+        fake_anime = self(real_photo) * 0.5 + 0.5
+
+        self.fid_photo.update(fake_photo, real=False)
+        self.fid_photo.update(real_photo, real=True)
+
+        self.fid_anime.update(fake_anime, real=False)
+        self.fid_anime.update(real_anime, real=True)
+
+        self.log(mode + '/fid_photo', self.fid_photo.compute(), prog_bar=False, on_step=True, on_epoch=True)
+        self.log(mode + '/fid_anime', self.fid_anime.compute(), prog_bar=False, on_step=True, on_epoch=True)
+
+        self.photo_images[mode] = None
+        self.anime_images[mode] = None
+    
