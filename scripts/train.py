@@ -36,12 +36,14 @@ def main(config: DictConfig):
     weight_decay = config.get('training').pop('weight_decay', 0.0)
     use_lsgan = config.get('training').pop('use_lsgan', True)
     warmup_generator_steps = config.get('training').pop('warmup_generator_steps', 0)
+    pool_size = config.get('training').pop('pool_size', 50)
 
     training_cfg = CycleGANTrainingConfig(
         learning_rate=lr,
         weight_decay=weight_decay,
         use_lsgan=use_lsgan,
-        warmup_generator_steps=warmup_generator_steps
+        warmup_generator_steps=warmup_generator_steps,
+        pool_size=pool_size
     )
 
     model = CycleGAN(
@@ -77,7 +79,7 @@ def main(config: DictConfig):
         num_workers=4
     )
 
-    logger = WandbLogger(project='face2anime', log_model=True, config=log_config)
+    logger = WandbLogger(project='face2anime', log_model=True)
     logger.log_hyperparams(log_config)
 
     trainer = Trainer(

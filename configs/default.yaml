@@ -18,6 +18,7 @@ training:
   warmup_generator_steps: 0
   precision: 16-mixed
   check_val_every_n_epoch: 10
+  pool_size: 50
 
 data:
   root: data
