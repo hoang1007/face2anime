@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         Block = init_block(block)
 
         # attention layer
-        Attention = init_attention(attention)
+        Attention = init_attention(attention) if attention is not None else None
 
         # Input convolution
         self.encoder_input = nn.Conv2d(in_channels=in_channels,
@@ -78,10 +78,10 @@ class Encoder(nn.Module):
             #
             self.encoder.append(down)
 
-        # mid block with attention
+        # mid block
         self.mid = nn.Sequential(
             Block(in_channels=channels),
-            Attention(channels=channels),
+            Attention(channels=channels) if Attention is not None else Block(channels, channels),
             Block(in_channels=channels),
         )
 

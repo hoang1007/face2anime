@@ -6,16 +6,19 @@ from torch import Tensor
 
 
 from face2anime.modules.blocks import init_block
+from face2anime.modules.attentions import init_attention
 from face2anime.modules.up_down import DownSample
 
 
 class BaseDiscriminator(nn.Module):
     def __init__(self,
                  img_channels: int,
+                 out_channels: int,
                  channels: int = 32,
                  block: str = "Residual",
                  n_layer_blocks: int = 1,
-                 channel_multipliers: List[int] = [1, 2, 4]):
+                 channel_multipliers: List[int] = [1, 2, 4],
+                 attention: str = "Attention"):
         
         super(BaseDiscriminator, self).__init__()
 
@@ -28,11 +31,14 @@ class BaseDiscriminator(nn.Module):
         # Block to downSample
         Block = init_block(block)
 
+        # attention layer
+        Attention = init_attention(attention) if attention is not None else None
+
         # Input convolution
         self.layer_input = nn.Conv2d(in_channels=img_channels,
-                                 out_channels=channels,
-                                 kernel_size=3,
-                                 padding=1)
+                                     out_channels=channels,
+                                     kernel_size=3,
+                                     padding=1)
 
         self.layers = nn.ModuleList()
 
@@ -62,6 +68,12 @@ class BaseDiscriminator(nn.Module):
             #
             self.layers.append(down)
         
+        # classifier block
+        self.classifier = nn.Sequential(
+            Block(in_channels=channels),
+            Attention(channels=channels) if Attention is not None else Block(channels, channels),
+            nn.Conv2d(channels, out_channels, kernel_size=3, padding=1)
+        )
 
     def forward(self, x: Tensor):
         x = self.layer_input(x)
@@ -72,13 +84,17 @@ class BaseDiscriminator(nn.Module):
                 x = block(x)
             # Down-sampling
             x = layer.downSample(x)
+        
+        x = self.classifier(x)
 
         return x
     
 
 if __name__ == "__main__":
     x = torch.randn(2, 3, 32, 32)
-    discriminator = BaseDiscriminator(img_channels=3)
+    discriminator = BaseDiscriminator(img_channels=3,
+                                      out_channels=1,
+                                      attention=None)
     out = discriminator(x)
 
     print('***** Discriminator *****')
