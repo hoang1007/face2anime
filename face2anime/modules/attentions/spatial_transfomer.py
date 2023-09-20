@@ -25,7 +25,7 @@ class SpatialTransformer(nn.Module):
     ## Spatial Transformer
     """
 
-    def __init__(self, channels: int, n_heads: int, n_layers: int):
+    def __init__(self, channels: int, n_heads: int = 4, n_layers: int = 1):
         """
         :param channels: is the number of channels in the feature map
         :param n_heads: is the number of attention heads

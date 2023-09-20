@@ -290,6 +290,7 @@ class CycleGAN(LightningModule):
     def on_test_epoch_end(self) -> None:
         self.compute_fid(mode='test')
 
+    @torch.inference_mode()
     def compute_fid(self, mode: str):
 
         self.fid_photo.reset()
