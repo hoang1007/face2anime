@@ -35,13 +35,15 @@ def main(config: DictConfig):
     lr = config.get('training').pop('learning_rate', 5e-5)
     weight_decay = config.get('training').pop('weight_decay', 0.0)
     use_lsgan = config.get('training').pop('use_lsgan', True)
+    pool_size = config.get('training').pop('pool_size', 0)
     warmup_generator_steps = config.get('training').pop('warmup_generator_steps', 0)
 
     training_cfg = CycleGANTrainingConfig(
         learning_rate=lr,
         weight_decay=weight_decay,
         use_lsgan=use_lsgan,
-        warmup_generator_steps=warmup_generator_steps
+        warmup_generator_steps=warmup_generator_steps,
+        pool_size=pool_size
     )
 
     model = CycleGAN(
