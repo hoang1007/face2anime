@@ -13,7 +13,7 @@ class BaseGenerator(nn.Module):
                  block: str = "Residual",
                  n_layer_blocks: int = 1,
                  channel_multipliers: List[int] = [1, 2, 4],
-                 attention: str = "Attention"):
+                 attention: str = "SelfAttention"):
         
         super().__init__()
         

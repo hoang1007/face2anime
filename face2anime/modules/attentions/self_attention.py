@@ -27,9 +27,8 @@ class SAWrapper(nn.Module):
 
     def __init__(self,
                  channels: int,
-                 n_heads: int,
-                 n_layers: int,
-                 d_cond: int = None):
+                 n_heads: int = 4,
+                 n_layers: int = 1):
         super(SAWrapper, self).__init__()
         self.sa = nn.Sequential(
             *[SelfAttention(channels, n_heads) for _ in range(n_layers)])

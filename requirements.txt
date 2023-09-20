@@ -3,3 +3,4 @@ torchvision
 lightning
 omegaconf
 torchmetrics[image]
+wandb

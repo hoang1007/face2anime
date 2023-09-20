@@ -2,11 +2,13 @@ from functools import partial
 
 from .generator import BaseGenerator
 from .resnet import ResnetGenerator
+from .unet import UNetGenerator
 
 
 Generators = {
     'base': BaseGenerator,
-    'resnet': ResnetGenerator
+    'resnet': ResnetGenerator,
+    'unet': UNetGenerator,
 }
 
 
