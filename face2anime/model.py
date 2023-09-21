@@ -292,6 +292,8 @@ class CycleGAN(LightningModule):
 
     @torch.inference_mode()
     def compute_fid(self, mode: str):
+        if self.photo_images[mode] is None or self.anime_images[mode] is None:
+            return
 
         self.fid_photo.reset()
         self.fid_anime.reset()
