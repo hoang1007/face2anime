@@ -41,5 +41,5 @@ You can track our experiments via [Weights & Biases](https://wandb.ai/hoang1007/
 
 ## Using the pre-trained models
 You can download our pre-trained models with following links:
-- [Anime face style transfer](https://www.kaggle.com/datasets/hoang1808/anime-face-generator)
-- [Anime scenery style transfer](https://www.kaggle.com/datasets/hoang1808/anime-scenery-generator)
+- [Anime face style transfer](https://github.com/hoang1007/face2anime/releases/download/face/epoch.389-step.195000.ckpt)
+- [Anime scenery style transfer](https://github.com/hoang1007/face2anime/releases/download/scenery/epoch.199-step.498400.ckpt)
