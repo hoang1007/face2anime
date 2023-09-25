@@ -13,7 +13,7 @@ training:
   seed: 42
   batch_size: 32
   epochs: 200
-  learning_rate: 5e-5
+  learning_rate: 2e-4
   weight_decay: 0.0000001
   warmup_generator_steps: 0
   precision: 16-mixed
