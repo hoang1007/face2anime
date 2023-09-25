@@ -52,8 +52,9 @@ class CycleGAN(LightningModule):
         self.automatic_optimization = False
         self.training_config = training_config
 
-        self.fake_a_pool = ImagePool(training_config.pool_size)
-        self.fake_b_pool = ImagePool(training_config.pool_size)
+        if self.training_config is not None:
+            self.fake_a_pool = ImagePool(training_config.pool_size)
+            self.fake_b_pool = ImagePool(training_config.pool_size)
 
         self.generator_ab = generator_ab
         self.discriminator_b = discriminator_b

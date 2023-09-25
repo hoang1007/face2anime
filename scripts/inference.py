@@ -16,6 +16,7 @@ def parse_args():
 
 
 def main(args):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     image_size = (256, 256)
     transform=T.Compose((
         T.Resize(image_size),
@@ -26,12 +27,15 @@ def main(args):
     image = Image.open(args.image_path).convert('RGB')
     image = transform(image).to('cuda')
 
-    model = CycleGAN.load_from_checkpoint(args.checkpoint, strict=False)
-    model.eval()
-    model.to('cuda')
+    model = CycleGAN.load_from_checkpoint(
+        args.checkpoint,
+        strict=False,
+        training_config=None
+    ).eval().to(device)
 
-    pred = model(image)
-    pred = (pred.cpu() * 0.5) + 0.5
+    with torch.inference_mode():
+        pred = model(image)
+        pred = (pred.cpu() * 0.5) + 0.5
     save_image(pred, 'output.jpg')
 
 if __name__ == '__main__':
